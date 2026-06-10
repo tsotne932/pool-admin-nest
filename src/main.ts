@@ -13,6 +13,11 @@ async function bootstrap() {
     //   key: readFileSync(keyPath),
     // },
   });
+  app.enableCors({
+    origin: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    credentials: true,
+  });
   app.setGlobalPrefix('pool');
   const port = process.env.PORT || 8080;
   await app.listen(port);
