@@ -8,13 +8,13 @@ async function bootstrap() {
   const keyPath = process.env.SSL_KEY_PATH || join(process.cwd(), 'ssl', 'ca.key');
 
   const app = await NestFactory.create(AppModule, {
-    httpsOptions: {
-      cert: readFileSync(certPath),
-      key: readFileSync(keyPath),
-    },
+    // httpsOptions: {
+    //   cert: readFileSync(certPath),
+    //   key: readFileSync(keyPath),
+    // },
   });
   app.setGlobalPrefix('pool');
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 8080;
   await app.listen(port);
   console.log(`HTTPS server is running on port ${port}`);
 }
