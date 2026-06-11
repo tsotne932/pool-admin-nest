@@ -65,7 +65,6 @@ export class UserService {
       userName: data.profile.pid,
       profile: data.profile,
       contact: data.contact,
-      isVerified: true,
       userGroupId: USER_GROUPS.USER,
       recordState: RECORD_STATE.ACTIVE,
       password: this.hashPassword(data.profile.pid.toString()),
