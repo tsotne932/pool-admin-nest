@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import * as crypto from 'crypto';
 import { Coach, CoachDocument } from '../schemas/coach.schema';
 import { RECORD_STATE, USER_GROUPS } from '../config/constants';
 
@@ -69,8 +70,10 @@ export class CoachService {
   }
 
   async create(data: any) {
+    const defaultPassword = (data?.profile?.pid || data?.userName || '').toString();
     const newCoach = new this.coachModel({
       userName: data.profile.pid,
+      password: this.hashPassword(defaultPassword),
       profile: data.profile,
       contact: data.contact,
       pool: data.pool,
@@ -87,5 +90,9 @@ export class CoachService {
 
   async delete(id: string) {
     return this.coachModel.findByIdAndUpdate(id, { recordState: RECORD_STATE.DELETED }, { new: true }).exec();
+  }
+
+  public hashPassword(password: string): string {
+    return crypto.createHash('md5').update(password).digest('hex');
   }
 }
