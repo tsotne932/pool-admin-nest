@@ -11,7 +11,7 @@ export class CoachesController {
   async find(@Body() body: any) {
     try {
       return await this.coachService.findAll(body.data, body.paging);
-    } catch (error) {
+    } catch (error: any) {
       return { error: error.message };
     }
   }
@@ -20,7 +20,16 @@ export class CoachesController {
   async findById(@Body() body: any) {
     try {
       return await this.coachService.findById(body.data);
-    } catch (error) {
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  }
+
+  @Post('findByCoach')
+  async findByCoach(@Body() body: any) {
+    try {
+      return await this.coachService.findByCoach(body.data);
+    } catch (error: any) {
       return { error: error.message };
     }
   }
@@ -29,7 +38,7 @@ export class CoachesController {
   async add(@Body() body: any) {
     try {
       return await this.coachService.create(body.data);
-    } catch (error) {
+    } catch (error: any) {
       return { error: error.message };
     }
   }
@@ -38,7 +47,7 @@ export class CoachesController {
   async edit(@Body() body: any) {
     try {
       return await this.coachService.update(body.data._id, body.data);
-    } catch (error) {
+    } catch (error: any) {
       return { error: error.message };
     }
   }
@@ -47,7 +56,7 @@ export class CoachesController {
   async delete(@Param('id') id: string) {
     try {
       return await this.coachService.delete(id);
-    } catch (error) {
+    } catch (error: any) {
       return { error: error.message };
     }
   }
