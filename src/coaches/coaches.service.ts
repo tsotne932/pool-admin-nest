@@ -2,15 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Coach, CoachDocument } from '../schemas/coach.schema';
-import { RECORD_STATE } from '../config/constants';
+import { RECORD_STATE, USER_GROUPS } from '../config/constants';
 
 @Injectable()
 export class CoachService {
-  constructor(@InjectModel(Coach.name) private coachModel: Model<CoachDocument>) {}
+  constructor(@InjectModel(Coach.name) private coachModel: Model<CoachDocument>) { }
 
   async findAll(data: any, paging: any) {
     const searchQuery = { recordState: RECORD_STATE.ACTIVE, ...data };
-    if(!paging){
+    if (!paging) {
       paging = { page: 1, limit: 10 };
     }
     const [coaches, count] = await Promise.all([
@@ -70,7 +70,12 @@ export class CoachService {
 
   async create(data: any) {
     const newCoach = new this.coachModel({
-      ...data,
+      userName: data.profile.pid,
+      profile: data.profile,
+      contact: data.contact,
+      pool: data.pool,
+      isVerified: true,
+      userGroupId: USER_GROUPS.COACH,
       recordState: RECORD_STATE.ACTIVE,
     });
     return await newCoach.save();
