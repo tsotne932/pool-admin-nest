@@ -27,7 +27,6 @@ export class Coach {
   @Prop({ type: Number, default: RECORD_STATE.ACTIVE })
   recordState: number;
 
-
   @Prop({ type: Number, default: USER_GROUPS.COACH })
   userGroupId: number;
 

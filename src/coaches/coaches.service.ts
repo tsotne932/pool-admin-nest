@@ -12,7 +12,7 @@ export class CoachService {
   async findAll(data: any, paging: any) {
     const searchQuery = { recordState: RECORD_STATE.ACTIVE, ...data };
     if (!paging) {
-      paging = { page: 1, limit: 10 };
+      paging = { page: 1, limit: 100 };
     }
     const [coaches, count] = await Promise.all([
       this.coachModel
@@ -27,7 +27,7 @@ export class CoachService {
   }
 
   async findById(query: any) {
-    return this.coachModel.findOne(query).populate('pool').populate('groups').exec();
+    return this.coachModel.findOne(query).populate('pool').exec();
   }
 
   async findByCoach(data: any) {
