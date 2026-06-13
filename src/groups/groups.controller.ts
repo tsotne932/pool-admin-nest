@@ -5,7 +5,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 @Controller('group')
 @UseGuards(JwtAuthGuard)
 export class GroupsController {
-  constructor(private groupService: GroupService) { }
+  constructor(private groupService: GroupService,) { }
 
   @Post('find')
   async find(@Body() body: any) {
@@ -50,4 +50,14 @@ export class GroupsController {
       return { error: error.message };
     }
   }
+
+  @Post('findByCoach')
+  async findByCoach(@Body() body: any) {
+    try {
+      return await this.groupService.findByCoach(body.data);
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  }
+
 }

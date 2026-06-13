@@ -24,16 +24,6 @@ export class CoachesController {
       return { error: error.message };
     }
   }
-
-  @Post('findByCoach')
-  async findByCoach(@Body() body: any) {
-    try {
-      return await this.coachService.findByCoach(body.data);
-    } catch (error: any) {
-      return { error: error.message };
-    }
-  }
-
   @Post('add')
   async add(@Body() body: any) {
     try {

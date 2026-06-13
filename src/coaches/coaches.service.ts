@@ -30,44 +30,6 @@ export class CoachService {
     return this.coachModel.findOne(query).populate('pool').exec();
   }
 
-  async findByCoach(data: any) {
-    const coachId = data?.coachId;
-    if (!coachId || !Types.ObjectId.isValid(coachId)) {
-      return [];
-    }
-
-    const coach = await this.coachModel
-      .findOne({ recordState: RECORD_STATE.ACTIVE, _id: new Types.ObjectId(coachId) })
-      .populate({
-        path: 'pool.groups',
-        match: { recordState: RECORD_STATE.ACTIVE },
-        populate: {
-          path: 'parentId',
-          match: { recordState: RECORD_STATE.ACTIVE },
-        },
-      })
-      .populate({
-        path: 'groups',
-        match: { recordState: RECORD_STATE.ACTIVE },
-        populate: {
-          path: 'parentId',
-          match: { recordState: RECORD_STATE.ACTIVE },
-        },
-      })
-      .exec();
-
-    const poolGroups = (coach as any)?.pool?.groups;
-    if (Array.isArray(poolGroups) && poolGroups.length) {
-      return poolGroups;
-    }
-
-    const coachGroups = (coach as any)?.groups;
-    if (Array.isArray(coachGroups) && coachGroups.length) {
-      return coachGroups;
-    }
-
-    return [];
-  }
 
   async create(data: any) {
     const defaultPassword = (data?.profile?.pid || data?.userName || '').toString();
