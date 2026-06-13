@@ -2,12 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
-import { RECORD_STATE, USER_GROUPS } from '../config/constants';
+import { History, HistoryDocument } from '../schemas/history.schema';
+import { Pool, PoolDocument } from '../schemas/pool.schema';
+import { HISTORY, RECORD_STATE, USER_GROUPS } from '../config/constants';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Pool.name) private poolModel: Model<PoolDocument>,
+    @InjectModel(History.name) private historyModel: Model<HistoryDocument>,
+  ) {}
 
   async findAll(data: any, paging: any) {
     const searchQuery = {
@@ -73,11 +79,17 @@ export class UserService {
     return await newUser.save();
   }
 
-  async update(userId: string, updateData: any) {
-    const user = await this.userModel.findOne({ _id: userId }).exec();
-    
-    if (!user) {
-      throw new Error('User not found');
+  async update(userId: string, updateData: any, action?: any) {
+    const isPackageEdit = !!action?.isPackageEdit;
+    const changeType = action?.changeType;
+
+    if (!userId) {
+      return { error: '_id Required' };
+    }
+
+    const userFound = await this.userModel.findOne({ _id: userId }).exec();
+    if (!userFound) {
+      return { error: 'User not Found!' };
     }
 
     const updateQuery: any = {};
@@ -90,6 +102,24 @@ export class UserService {
       updateQuery.contact = updateData.contact;
     }
 
+    if (updateData.pool && Object.keys(updateData.pool).length) {
+      const pool = await this.poolModel.create({
+        ...updateData.pool,
+        user: new Types.ObjectId(userId),
+      });
+      updateQuery.pool = pool._id;
+    }
+
+    if (updateData.card && Object.keys(updateData.card).length && updateData.card.code) {
+      const cardResult = await this.userModel.db.collection('cards').insertOne({
+        code: updateData.card.code,
+        user: new Types.ObjectId(userId),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      updateQuery.card = cardResult.insertedId;
+    }
+
     if (updateData.userGroupId) {
       updateQuery.userGroupId = updateData.userGroupId;
     }
@@ -98,15 +128,19 @@ export class UserService {
       updateQuery.recordState = updateData.recordState;
     }
 
+    if (updateData.isVerified) {
+      updateQuery.isVerified = updateData.isVerified;
+    }
+
     if (Object.keys(updateQuery).length === 0) {
       return { result: 'Nothing Changed' };
     }
 
-    return await this.userModel
+    await this.userModel
       .findOneAndUpdate(
         { _id: userId },
         { $set: updateQuery },
-        { new: true },
+        { new: false },
       )
       .populate({
         path: 'pool',
@@ -117,6 +151,18 @@ export class UserService {
         ],
       })
       .exec();
+
+    await this.historyModel.create({
+      dataId: userFound._id,
+      dataType: HISTORY.DATA_TYPE.USER,
+      changeType: isPackageEdit ? changeType : HISTORY.CHANGE_TYPE.USER_INFO,
+      oldValue: userFound,
+      newValue: updateQuery,
+      changedBy: null,
+      recordState: RECORD_STATE.ACTIVE,
+    });
+
+    return userFound;
   }
 
   private hashPassword(password: string): string {

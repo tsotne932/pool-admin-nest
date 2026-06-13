@@ -9,7 +9,7 @@ export class UsersController {
   async find(@Body() body: any) {
     try {
       return await this.userService.findAll(body.data, body.paging);
-    } catch (error) {
+    } catch (error: any) {
       return { error: error.message };
     }
   }
@@ -18,7 +18,7 @@ export class UsersController {
   async findById(@Body() body: any) {
     try {
       return await this.userService.findById(body.data);
-    } catch (error) {
+    } catch (error: any) {
       return { error: error.message };
     }
   }
@@ -27,7 +27,7 @@ export class UsersController {
   async findByIdWithPopulation(@Body() body: any) {
     try {
       return await this.userService.findByIdWithPopulation(body.data);
-    } catch (error) {
+    } catch (error: any) {
       return { error: error.message };
     }
   }
@@ -36,7 +36,7 @@ export class UsersController {
   async add(@Body() body: any) {
     try {
       return await this.userService.create(body.data);
-    } catch (error) {
+    } catch (error: any) {
       return { error: error.message };
     }
   }
@@ -44,8 +44,8 @@ export class UsersController {
   @Post('edit')
   async edit(@Body() body: any) {
     try {
-      return await this.userService.update(body.data._id, body.data);
-    } catch (error) {
+      return await this.userService.update(body.data._id, body.data, body.action);
+    } catch (error: any) {
       return { error: error.message };
     }
   }
