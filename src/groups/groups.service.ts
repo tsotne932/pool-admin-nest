@@ -4,14 +4,14 @@ import { Model, Types } from 'mongoose';
 import { Group, GroupDocument } from '../schemas/group.schema';
 import { User, UserDocument } from '../schemas/user.schema';
 import { RECORD_STATE } from '../config/constants';
-import { CoachDocument } from 'src/schemas/coach.schema';
+import { Coach, CoachDocument } from 'src/schemas/coach.schema';
 
 @Injectable()
 export class GroupService {
   constructor(
     @InjectModel(Group.name) private groupModel: Model<GroupDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @InjectModel('Coach') private coachModel: Model<CoachDocument>
+    @InjectModel(Coach.name) private coachModel: Model<CoachDocument>
   ) { }
 
   async findAll(data: any, paging: any) {
@@ -113,14 +113,6 @@ export class GroupService {
       .findOne({ recordState: RECORD_STATE.ACTIVE, _id: new Types.ObjectId(coachId) })
       .populate({
         path: 'pool.groups',
-        match: { recordState: RECORD_STATE.ACTIVE },
-        populate: {
-          path: 'parentId',
-          match: { recordState: RECORD_STATE.ACTIVE },
-        },
-      })
-      .populate({
-        path: 'groups',
         match: { recordState: RECORD_STATE.ACTIVE },
         populate: {
           path: 'parentId',
