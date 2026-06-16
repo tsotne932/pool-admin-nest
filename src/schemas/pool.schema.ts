@@ -5,13 +5,13 @@ export type PoolDocument = Pool & Document;
 
 @Schema({ timestamps: true })
 export class Pool {
-  @Prop({ type: Types.ObjectId, ref: 'groups' })
+  @Prop({ type: Types.ObjectId, ref: 'Group' })
   group: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'packages' })
+  @Prop({ type: Types.ObjectId, ref: 'Package' })
   package: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'coaches' })
+  @Prop({ type: Types.ObjectId, ref: 'Coach' })
   coach: Types.ObjectId;
 
   @Prop()

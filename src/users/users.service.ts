@@ -6,6 +6,8 @@ import { History, HistoryDocument } from '../schemas/history.schema';
 import { Pool, PoolDocument } from '../schemas/pool.schema';
 import { HISTORY, RECORD_STATE, USER_GROUPS } from '../config/constants';
 import * as crypto from 'crypto';
+import { Card, CardDocument } from 'src/schemas/card.schema';
+import { Visit, VisitDocument } from 'src/schemas/visit.schema';
 
 @Injectable()
 export class UserService {
@@ -13,7 +15,9 @@ export class UserService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Pool.name) private poolModel: Model<PoolDocument>,
     @InjectModel(History.name) private historyModel: Model<HistoryDocument>,
-  ) {}
+    @InjectModel(Card.name) private cardModel: Model<CardDocument>,
+    @InjectModel(Visit.name) private visitModel: Model<VisitDocument>
+  ) { }
 
   async findAll(data: any, paging: any) {
     const searchQuery = {
@@ -24,6 +28,15 @@ export class UserService {
     const [users, count] = await Promise.all([
       this.userModel
         .find(searchQuery)
+        .populate('card')
+        .populate({
+          path: 'pool',
+          populate: [
+            { path: 'group', match: { recordState: RECORD_STATE.ACTIVE } },
+            { path: 'coach', match: { recordState: RECORD_STATE.ACTIVE } },
+            { path: 'package', match: { recordState: RECORD_STATE.ACTIVE } },
+          ],
+        })
         .skip((paging.limit * paging.page) - paging.limit)
         .limit(paging.limit)
         .exec(),
@@ -62,7 +75,7 @@ export class UserService {
     const existingUser = await this.userModel
       .findOne({ 'profile.pid': data.profile.pid })
       .exec();
-    
+
     if (existingUser) {
       throw new Error('PID Exists!');
     }
@@ -111,13 +124,13 @@ export class UserService {
     }
 
     if (updateData.card && Object.keys(updateData.card).length && updateData.card.code) {
-      const cardResult = await this.userModel.db.collection('cards').insertOne({
+      const cardResult = await new this.cardModel({
         code: updateData.card.code,
         user: new Types.ObjectId(userId),
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
-      updateQuery.card = cardResult.insertedId;
+      }).save();
+      updateQuery.card = cardResult._id;
     }
 
     if (updateData.userGroupId) {
@@ -167,5 +180,28 @@ export class UserService {
 
   private hashPassword(password: string): string {
     return crypto.createHash('md5').update(password).digest('hex');
+  }
+
+  async findByCode(data: any) {
+    const card = await this.cardModel.findOne({ code: data.code }).populate({ path: 'user', populate: { path: 'pool', populate: { path: 'package' } } });
+    return card ? card.user : null;
+  }
+
+  async letsGoSwimming(data: any) {
+    let code = data.code;
+    if (!code) return { error: "Code Required" };
+
+    const cardUser = await this.cardModel.findOne({ code: data.code });
+    if (!cardUser) throw { message: "Card Not Found" };
+
+    const user = await this.userModel.findOne({ _id: cardUser.user })
+    const card = await this.cardModel.findOne({ _id: cardUser._id });
+    const pool = await this.poolModel.findOne({ _id: user.pool });
+    const newVisit = new this.visitModel({ user: cardUser._id.toString(), card: card._id, pool: pool._id, paymentKey: pool.paymentKey });
+    await newVisit.save();
+    const totalVisits = await this.visitModel.countDocuments({ user: cardUser._id.toString(), paymentKey: pool.paymentKey }).exec();
+    await this.poolModel.updateOne({ _id: pool._id }, { $set: { visited: totalVisits } }).exec();
+    return cardUser;
+
   }
 }

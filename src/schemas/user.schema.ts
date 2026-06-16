@@ -21,10 +21,10 @@ export class User {
   @Prop({ type: Object })
   contact: Record<string, any>;
 
-  @Prop({ type: Types.ObjectId, ref: 'pool' })
+  @Prop({ type: Types.ObjectId, ref: 'Pool' })
   pool: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'cards' })
+  @Prop({ type: Types.ObjectId, ref: 'Card' })
   card: Types.ObjectId;
 
   @Prop({ type: Number, default: RECORD_STATE.ACTIVE })
@@ -35,6 +35,7 @@ export class User {
 
   @Prop({ type: [Object] })
   history: Record<string, any>[];
+  
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
