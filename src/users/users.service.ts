@@ -25,6 +25,12 @@ export class UserService {
       ...data,
     };
 
+    if(data['pool.coach']){
+      delete searchQuery['pool.coach'];
+      const pools = await this.poolModel.find({ coach: new Types.ObjectId(data['pool.coach']), recordState: RECORD_STATE.ACTIVE }).exec();
+      const poolIds = pools.map(pool => pool._id);
+      searchQuery['pool'] = { $in: poolIds };
+    }
     const [users, count] = await Promise.all([
       this.userModel
         .find(searchQuery)
