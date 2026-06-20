@@ -8,6 +8,7 @@ import { HISTORY, RECORD_STATE, USER_GROUPS } from '../config/constants';
 import * as crypto from 'crypto';
 import { Card, CardDocument } from 'src/schemas/card.schema';
 import { Visit, VisitDocument } from 'src/schemas/visit.schema';
+import { Coach, CoachDocument } from 'src/schemas/coach.schema';
 
 @Injectable()
 export class UserService {
@@ -27,7 +28,7 @@ export class UserService {
 
     if(data['pool.coach']){
       delete searchQuery['pool.coach'];
-      const pools = await this.poolModel.find({ coach: new Types.ObjectId(data['pool.coach']), recordState: RECORD_STATE.ACTIVE }).exec();
+      const pools = await this.poolModel.find({ coach: data['pool.coach']}).select('_id').exec();
       const poolIds = pools.map(pool => pool._id);
       searchQuery['pool'] = { $in: poolIds };
     }
