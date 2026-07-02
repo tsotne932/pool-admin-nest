@@ -15,10 +15,10 @@ export class Pool {
   coach: Types.ObjectId;
 
   @Prop()
-  startDate: string;
+  startDate: Date;
 
-  @Prop({ type: String, default: new Date(32503665600000).toISOString() })
-  endDate: string;
+  @Prop({ type: Date, default: new Date(32503665600000) })
+  endDate: Date;
 
   @Prop({ type: Boolean, default: false })
   active: boolean;
@@ -29,7 +29,7 @@ export class Pool {
   @Prop({ type: String, default: () => new Date().getTime().toString() })
   paymentKey: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'users' })
+  @Prop({ type: Types.ObjectId, ref: 'User' })
   user: Types.ObjectId;
 
   @Prop({ type: Date, default: () => new Date() })
