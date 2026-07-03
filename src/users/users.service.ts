@@ -53,6 +53,11 @@ export class UserService {
     }
 
 
+    if (searchQuery['firstName']) {
+      searchQuery['firstName'] = { $regex: searchQuery['firstName'], $options: 'i' };
+    } else if (searchQuery['lastName']) {
+      searchQuery['lastName'] = { $regex: searchQuery['lastName'], $options: 'i' };
+    }
 
     const [users, count] = await Promise.all([
       this.userModel
