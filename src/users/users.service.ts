@@ -25,13 +25,35 @@ export class UserService {
       userGroupId: USER_GROUPS.USER,
       ...data,
     };
+    let poolQuery = {};
+    const existsPoolQuery = Object.keys(searchQuery).filter(key => key.startsWith('pool.'));
+    if (existsPoolQuery.length) {
+      existsPoolQuery.forEach(key => {
+        const poolKey = key.replace('pool.', '');
+        poolQuery[poolKey] = searchQuery[key];
+        // searchQuery[`pool.${poolKey}`] = searchQuery[key];
+        delete searchQuery[key];
+      });
+    }
+    if (data['pool.group']) {
+      delete searchQuery['pool.group'];
+    }
 
-    if(data['pool.coach']){
+    if (data['pool.coach']) {
       delete searchQuery['pool.coach'];
-      const pools = await this.poolModel.find({ coach: data['pool.coach']}).select('_id').exec();
+
+      const quer = { coach: data['pool.coach'] };
+
+      if (data['pool.group']) {
+        quer['group'] = data['pool.group'];
+      }
+      const pools = await this.poolModel.find(quer).select('_id').exec();
       const poolIds = pools.map(pool => pool._id);
       searchQuery['pool'] = { $in: poolIds };
     }
+
+
+
     const [users, count] = await Promise.all([
       this.userModel
         .find(searchQuery)
@@ -39,7 +61,7 @@ export class UserService {
         .populate({
           path: 'pool',
           populate: [
-            { path: 'group', match: { recordState: RECORD_STATE.ACTIVE } },
+            { path: 'group', match: { recordState: RECORD_STATE.ACTIVE, ...poolQuery } },
             { path: 'coach', match: { recordState: RECORD_STATE.ACTIVE } },
             { path: 'package', match: { recordState: RECORD_STATE.ACTIVE } },
           ],
@@ -123,21 +145,53 @@ export class UserService {
     }
 
     if (updateData.pool && Object.keys(updateData.pool).length) {
-      const pool = await this.poolModel.create({
-        ...updateData.pool,
-        user: new Types.ObjectId(userId),
-      });
-      updateQuery.pool = pool._id;
+
+      const existingPool = await this.poolModel.findById(userFound.pool).exec();
+      if (existingPool) {
+        const existingPoolEndDate = existingPool.endDate.toLocaleDateString('en-CA');
+        const existingPollStartDate = existingPool.startDate.toLocaleDateString('en-CA');
+        const newPoolStartDate = new Date(updateData.pool.startDate).toLocaleDateString('en-CA');
+        const newPoolEndDate = new Date(updateData.pool.endDate).toLocaleDateString('en-CA');
+
+        if (existingPoolEndDate !== newPoolEndDate && existingPollStartDate !== newPoolStartDate) {
+          const pool = await this.poolModel.create({
+            ...updateData.pool,
+            user: new Types.ObjectId(userId),
+          });
+          updateQuery.pool = pool._id;
+
+          existingPool.toDate = new Date();
+          existingPool.active = false;
+          await existingPool.save();
+        } else {
+          existingPool.updateOne({
+            ...updateData.pool,
+          }).exec();
+        }
+      } else {
+        const pool = await this.poolModel.create({
+          ...updateData.pool,
+          user: new Types.ObjectId(userId),
+        });
+        updateQuery.pool = pool._id;
+      }
+
     }
 
     if (updateData.card && Object.keys(updateData.card).length && updateData.card.code) {
-      const cardResult = await new this.cardModel({
+      const exists = await this.cardModel.exists({
         code: updateData.card.code,
-        user: new Types.ObjectId(userId),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }).save();
-      updateQuery.card = cardResult._id;
+        user: userId
+      });
+      if (!exists) {
+        const cardResult = await new this.cardModel({
+          code: updateData.card.code,
+          user: new Types.ObjectId(userId),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }).save();
+        updateQuery.card = cardResult._id;
+      }
     }
 
     if (updateData.userGroupId) {
@@ -201,9 +255,16 @@ export class UserService {
     const cardUser = await this.cardModel.findOne({ code: data.code });
     if (!cardUser) throw { message: "Card Not Found" };
 
+
     const user = await this.userModel.findOne({ _id: cardUser.user })
     const card = await this.cardModel.findOne({ _id: cardUser._id });
     const pool = await this.poolModel.findOne({ _id: user.pool });
+
+    const lastUserVisit = await this.visitModel.findOne({ user: cardUser._id.toString(), paymentKey: pool.paymentKey }).sort({ visitDate: -1 }).exec();
+    if (lastUserVisit && (new Date(lastUserVisit.visitDate).getTime() > new Date(new Date().setHours(new Date().getHours() - 1)).getTime())) {
+      throw { message: "User has already visited within the last hour" };
+    }
+
     const newVisit = new this.visitModel({ user: cardUser._id.toString(), card: card._id, pool: pool._id, paymentKey: pool.paymentKey });
     await newVisit.save();
     const totalVisits = await this.visitModel.countDocuments({ user: cardUser._id.toString(), paymentKey: pool.paymentKey }).exec();

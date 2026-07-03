@@ -5,7 +5,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 @Controller('coach')
 @UseGuards(JwtAuthGuard)
 export class CoachesController {
-  constructor(private coachService: CoachService) {}
+  constructor(private coachService: CoachService) { }
 
   @Post('find')
   async find(@Body() body: any) {
@@ -50,4 +50,15 @@ export class CoachesController {
       return { error: error.message };
     }
   }
+
+
+  @Post('findUser')
+  async findUser(@Body() body: any) {
+    try {
+      return await this.coachService.findUser(body.data, body.paging);
+    } catch (error: any) {
+      return { error: error.message };
+    }
+  }
+
 }
