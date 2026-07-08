@@ -161,6 +161,8 @@ export class UserService {
         if (existingPoolEndDate !== newPoolEndDate && existingPollStartDate !== newPoolStartDate) {
           const pool = await this.poolModel.create({
             ...updateData.pool,
+            visited: 0,
+            paymentKey: new Date().getTime().toString(),
             user: new Types.ObjectId(userId),
           });
           updateQuery.pool = pool._id;
